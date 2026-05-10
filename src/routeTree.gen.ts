@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as QuestsRouteImport } from './routes/quests'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as CheckinRouteImport } from './routes/checkin'
 import { Route as IndexRouteImport } from './routes/index'
 
+const QuestsRoute = QuestsRouteImport.update({
+  id: '/quests',
+  path: '/quests',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -40,12 +46,14 @@ export interface FileRoutesByFullPath {
   '/checkin': typeof CheckinRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
+  '/quests': typeof QuestsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/checkin': typeof CheckinRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
+  '/quests': typeof QuestsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/checkin': typeof CheckinRoute
   '/home': typeof HomeRoute
   '/onboarding': typeof OnboardingRoute
+  '/quests': typeof QuestsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/checkin' | '/home' | '/onboarding'
+  fullPaths: '/' | '/checkin' | '/home' | '/onboarding' | '/quests'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/checkin' | '/home' | '/onboarding'
-  id: '__root__' | '/' | '/checkin' | '/home' | '/onboarding'
+  to: '/' | '/checkin' | '/home' | '/onboarding' | '/quests'
+  id: '__root__' | '/' | '/checkin' | '/home' | '/onboarding' | '/quests'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,10 +76,18 @@ export interface RootRouteChildren {
   CheckinRoute: typeof CheckinRoute
   HomeRoute: typeof HomeRoute
   OnboardingRoute: typeof OnboardingRoute
+  QuestsRoute: typeof QuestsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/quests': {
+      id: '/quests'
+      path: '/quests'
+      fullPath: '/quests'
+      preLoaderRoute: typeof QuestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckinRoute: CheckinRoute,
   HomeRoute: HomeRoute,
   OnboardingRoute: OnboardingRoute,
+  QuestsRoute: QuestsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
