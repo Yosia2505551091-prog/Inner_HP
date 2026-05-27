@@ -11,7 +11,7 @@ import path from "path";
 export default defineConfig({
   plugins: [
     tanstackStart({
-      preset: "static",  // Changed from "vercel" to "static"
+      preset: "static", // CRITICAL: Must be static for frontend-only
     }),
   ],
   resolve: {
