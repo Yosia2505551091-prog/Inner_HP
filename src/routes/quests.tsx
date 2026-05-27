@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MobileShell } from "@/components/MobileShell";
-import { useMemo, useState } from "react";
-import { Sparkles, Check, RefreshCcw, Clock } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Sparkles, Check, RefreshCcw, Gem } from "lucide-react";
 import { CATEGORY_META, Difficulty, Quest, pickDailyQuests, rerollQuest, QuestCategory } from "@/lib/quests";
-import { useHP } from "@/lib/hp-context";
+import { useHP, MODE_META } from "@/lib/hp-context";
 import { questCompleteQuote } from "@/lib/quotes";
 
 export const Route = createFileRoute("/quests")({
@@ -17,20 +17,22 @@ const diffColor: Record<Difficulty, string> = {
   hard: "bg-[var(--peach)]/80",
 };
 
-const REFRESH_COOLDOWN_MS = 6 * 60 * 60 * 1000;
-
 function Quests() {
-  const { addHP, addXP } = useHP();
-  const [active, setActive] = useState<Quest[]>(() => pickDailyQuests());
+  const { addHP, addXP, recordQuest, mode } = useHP();
+  const [active, setActive] = useState<Quest[]>(() => pickDailyQuests(undefined, mode));
   const [done, setDone] = useState<Record<string, boolean>>({});
   const [rerolling, setRerolling] = useState<string | null>(null);
-  const [lastRefresh, setLastRefresh] = useState<number>(0);
   const [filter, setFilter] = useState<QuestCategory | "all">("all");
   const [reward, setReward] = useState<{ hp: number; xp: number; quote: string } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [rerolledIds, setRerolledIds] = useState<string[]>([]);
 
-  const cooldownLeft = Math.max(0, REFRESH_COOLDOWN_MS - (Date.now() - lastRefresh));
-  const canRefresh = cooldownLeft === 0;
+  // When the user's HP mode changes (e.g. recovers), refresh the daily set
+  useEffect(() => {
+    setActive(pickDailyQuests(undefined, mode));
+    setDone({});
+    setRerolledIds([]);
+  }, [mode]);
 
   const visible = useMemo(
     () => active.filter((q) => filter === "all" || q.category === filter),
@@ -44,24 +46,20 @@ function Quests() {
     setDone((p) => ({ ...p, [q.id]: true }));
     addHP(q.hp);
     addXP(q.xp);
+    recordQuest();
     setReward({ hp: q.hp, xp: q.xp, quote: questCompleteQuote() });
     setTimeout(() => setReward(null), 2200);
   };
 
   const refresh = (q: Quest) => {
-    if (!canRefresh) {
-      const h = Math.ceil(cooldownLeft / (60 * 60 * 1000));
-      setToast(`Reroll recharges in ~${h}h. The magic needs rest.`);
-      setTimeout(() => setToast(null), 2400);
-      return;
-    }
     setRerolling(q.id);
     setTimeout(() => {
-      const next = rerollQuest(q, active.map((x) => x.id));
+      const exclude = [...active.map((x) => x.id), ...rerolledIds];
+      const next = rerollQuest(q, exclude);
       setActive((prev) => prev.map((x) => (x.id === q.id ? next : x)));
+      setRerolledIds((prev) => [...prev, q.id].slice(-20));
       setRerolling(null);
-      setLastRefresh(Date.now());
-      setToast("A new quest has appeared in your adventure log.");
+      setToast("A new quest has appeared in your Quest Board.");
       setTimeout(() => setToast(null), 2400);
     }, 700);
   };
@@ -72,7 +70,9 @@ function Quests() {
     <MobileShell>
       <header>
         <h1 className="font-display text-3xl font-bold">Quest board</h1>
-        <p className="text-xs text-muted-foreground">Choose your adventure for today, hero.</p>
+        <p className="text-xs text-muted-foreground">
+          {MODE_META[mode].label} mode · {active.length} quests today
+        </p>
       </header>
 
       <div className="glass mt-4 flex items-center justify-between rounded-3xl p-4">
@@ -87,8 +87,8 @@ function Quests() {
         <div className="text-right">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Reroll</p>
           <p className="flex items-center justify-end gap-1 font-display text-sm font-bold">
-            <Clock className="h-3 w-3" />
-            {canRefresh ? "Ready" : `${Math.ceil(cooldownLeft / 3600000)}h`}
+            <Gem className="h-3 w-3 text-[var(--lavender)]" />
+            Unlimited
           </p>
         </div>
       </div>

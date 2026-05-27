@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { MobileShell } from "@/components/MobileShell";
 import { HPBar } from "@/components/HPBar";
-import heroAvatar from "@/assets/hero-avatar.png";
-import { Flame, Trophy, Coffee, Moon, ChevronRight, Settings } from "lucide-react";
+import { Flame, Trophy, Coffee, ChevronRight, Settings, Compass, Sparkles } from "lucide-react";
 import { useHP, MODE_META } from "@/lib/hp-context";
 import { pickDailyQuests } from "@/lib/quests";
 import { dailyQuote, recoveryQuote, emergencyQuote } from "@/lib/quotes";
 import { useState } from "react";
+import { avatarById } from "@/lib/avatars";
+import { titleForLevel, xpProgress, nextMilestone } from "@/lib/levels";
+import { activeMainQuest, progressFor } from "@/lib/main-quests";
 
 export const Route = createFileRoute("/home")({
   component: Home,
@@ -22,9 +24,17 @@ const moods = [
 ];
 
 function Home() {
-  const { hp, level, streak, badges, mode, addHP } = useHP();
+  const { hp, xp, level, streak, badges, mode, addHP, avatar, questsCompleted } = useHP();
   const meta = MODE_META[mode];
-  const todayQuests = pickDailyQuests().slice(0, 3);
+  const todayQuests = pickDailyQuests(undefined, mode).slice(0, 3);
+  const av = avatarById(avatar);
+  const title = titleForLevel(level);
+  const xpInfo = xpProgress(xp, level);
+  const nextTitleAt = nextMilestone(level);
+  const mainQuest = activeMainQuest({ questsCompleted, streak, level, badgesUnlocked: badges.length });
+  const mainProgress = progressFor(mainQuest, { questsCompleted, streak, level, badgesUnlocked: badges.length });
+  const dayQuestsTotal = mode === "maintenance" ? 6 : mode === "recovery" ? 5 : 3;
+  const completionRate = Math.round((Math.min(todayQuests.length, dayQuestsTotal) / dayQuestsTotal) * 100);
   const [pickedMood, setPickedMood] = useState<number | null>(null);
   const quote =
     mode === "emergency" ? emergencyQuote()
@@ -55,14 +65,29 @@ function Home() {
         <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full opacity-40 blur-2xl" style={{ background: meta.tint }} />
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="absolute inset-0 -z-10 rounded-full bg-[var(--mint)] blur-xl opacity-60" />
-            <img src={heroAvatar} alt="Your companion" width={768} height={768} className="animate-float h-24 w-24 object-contain" />
+            <div className="absolute inset-0 -z-10 rounded-full blur-xl opacity-60" style={{ background: av.tint }} />
+            <div
+              className="animate-float grid h-24 w-24 place-items-center rounded-full text-5xl shadow-inner"
+              style={{ background: `radial-gradient(circle at 30% 30%, white, ${av.tint})` }}
+              aria-label={av.name}
+            >
+              {av.emoji}
+            </div>
           </div>
           <div className="flex-1">
             <div className="inline-flex items-center gap-1 rounded-full bg-[var(--mint)]/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
-              <Flame className="h-3 w-3" /> Lvl {level} · Calm Wanderer
+              <Flame className="h-3 w-3" /> Lvl {level} · {title}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">{meta.tagline}</p>
+            <div className="mt-2">
+              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                <span>XP {xpInfo.into}/{xpInfo.needed}</span>
+                <span>Next title · Lvl {nextTitleAt}</span>
+              </div>
+              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/60">
+                <div className="gradient-primary h-full rounded-full transition-all duration-700" style={{ width: `${xpInfo.pct}%` }} />
+              </div>
+            </div>
           </div>
         </div>
         <div className="mt-4">
@@ -93,6 +118,33 @@ function Home() {
         <p className="mt-2 font-display text-base leading-snug">“{quote}”</p>
       </section>
 
+      {/* Main quest */}
+      <section className="mt-5">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="font-display text-base font-semibold">Main quest</h3>
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Long journey</span>
+        </div>
+        <div className="glass relative overflow-hidden rounded-3xl p-4">
+          <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-40 blur-2xl bg-[var(--lavender)]" />
+          <div className="relative flex items-center gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[var(--lavender)]/40">
+              <Compass className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <p className="font-display text-base font-semibold">{mainQuest.title}</p>
+              <p className="text-[11px] text-muted-foreground">{mainQuest.description}</p>
+            </div>
+            <div className="text-right">
+              <p className="font-display text-sm font-bold">{mainProgress.current}/{mainQuest.goal}</p>
+              <p className="text-[10px] text-muted-foreground">+{mainQuest.rewardXp} XP</p>
+            </div>
+          </div>
+          <div className="relative mt-3 h-2 w-full overflow-hidden rounded-full bg-white/60">
+            <div className="gradient-hp h-full rounded-full transition-all duration-700" style={{ width: `${mainProgress.pct}%` }} />
+          </div>
+        </div>
+      </section>
+
       {/* Active quests */}
       <section className="mt-5">
         <div className="mb-2 flex items-center justify-between">
@@ -120,19 +172,37 @@ function Home() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="mt-5 grid grid-cols-3 gap-2">
-        {[
-          { i: Flame, label: "Streak", v: `${streak}d`, t: "var(--peach)" },
-          { i: Trophy, label: "Badges", v: String(badges.length), t: "var(--lavender)" },
-          { i: Moon, label: "Sleep", v: "7h", t: "var(--sky)" },
-        ].map(({ i: Ic, label, v, t }, k) => (
-          <div key={k} className="glass-soft rounded-2xl p-3 text-center">
-            <Ic className="mx-auto h-4 w-4" style={{ color: t }} />
-            <p className="mt-1 font-display text-lg font-bold">{v}</p>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
+      {/* Adventure status (replaces Hours Slept card) */}
+      <section className="mt-5">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="font-display text-base font-semibold">Current adventure status</h3>
+          <Sparkles className="h-4 w-4 text-[var(--lavender)]" />
+        </div>
+        <div className="glass-soft grid grid-cols-2 gap-2 rounded-3xl p-3">
+          <div className="rounded-2xl bg-white/40 p-3">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Mode</p>
+            <p className="font-display text-base font-bold">{meta.label}</p>
           </div>
-        ))}
+          <div className="rounded-2xl bg-white/40 p-3">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Level</p>
+            <p className="font-display text-base font-bold">Lv {level}</p>
+          </div>
+          <div className="col-span-2 rounded-2xl bg-white/40 p-3">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Active main quest</p>
+            <p className="font-display text-sm font-bold leading-tight">{mainQuest.title}</p>
+            <p className="text-[11px] text-muted-foreground">{mainProgress.current}/{mainQuest.goal} · {mainProgress.pct}%</p>
+          </div>
+          <div className="rounded-2xl bg-white/40 p-3 text-center">
+            <Trophy className="mx-auto h-4 w-4 text-[var(--lavender)]" />
+            <p className="mt-1 font-display text-lg font-bold">{completionRate}%</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Quest rate</p>
+          </div>
+          <div className="rounded-2xl bg-white/40 p-3 text-center">
+            <Flame className="mx-auto h-4 w-4 text-[var(--peach)]" />
+            <p className="mt-1 font-display text-lg font-bold">{streak}d</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Streak</p>
+          </div>
+        </div>
       </section>
 
       <Link to="/emergency" className="mt-5 block text-center text-[11px] text-muted-foreground underline-offset-4 hover:underline">
