@@ -10,7 +10,18 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
+    // Add history type for SPA
+    history: typeof window !== 'undefined' 
+      ? undefined // Uses browser history in browser
+      : undefined,
   });
 
   return router;
 };
+
+// Register the router for type safety
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: ReturnType<typeof getRouter>
+  }
+}
