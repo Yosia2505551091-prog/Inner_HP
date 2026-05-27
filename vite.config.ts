@@ -5,18 +5,6 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "vite";
-import { tanstackStart } from "@tanstack/react-start/plugin/vite";
-import path from "path";
+import { lovableTanstackConfig } from "@lovable.dev/vite-tanstack-config";
 
-export default defineConfig({
-  plugins: [
-    tanstackStart({
-      preset: "static", // CRITICAL: Must be static for frontend-only
-    }),
-  ],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-});
+export default defineConfig(lovableTanstackConfig());
