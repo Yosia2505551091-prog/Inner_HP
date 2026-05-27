@@ -3,6 +3,7 @@ import { MobileShell } from "@/components/MobileShell";
 import { HPBar } from "@/components/HPBar";
 import heroAvatar from "@/assets/hero-avatar.png";
 import { Settings, Moon, Bell, Shield, ChevronRight, Trophy, Lock } from "lucide-react";
+import { useHP, MODE_META } from "@/lib/hp-context";
 
 export const Route = createFileRoute("/profile")({
   component: Profile,
@@ -19,35 +20,37 @@ const badges = [
 ];
 
 function Profile() {
+  const { hp, level, streak, mode } = useHP();
+  const meta = MODE_META[mode];
   return (
     <MobileShell>
       <header className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-bold">My character</h1>
-        <button className="glass grid h-10 w-10 place-items-center rounded-full">
+        <h1 className="font-display text-2xl font-bold">Hero profile</h1>
+        <Link to="/settings" className="glass grid h-10 w-10 place-items-center rounded-full">
           <Settings className="h-4 w-4" />
-        </button>
+        </Link>
       </header>
 
       <section className="glass mt-4 overflow-hidden rounded-3xl p-5 text-center">
         <div className="relative mx-auto w-fit">
-          <div className="absolute inset-0 -z-10 rounded-full bg-[var(--lavender)] blur-2xl opacity-60" />
+          <div className="absolute inset-0 -z-10 rounded-full blur-2xl opacity-60" style={{ background: meta.tint }} />
           <img src={heroAvatar} alt="avatar" width={768} height={768} className="animate-float h-32 w-32 object-contain" />
         </div>
         <h2 className="mt-2 font-display text-2xl font-bold">Aria</h2>
-        <p className="text-xs text-muted-foreground">Calm Wanderer · Level 7</p>
+        <p className="text-xs text-muted-foreground">Calm Wanderer · Lvl {level} · {meta.label}</p>
         <div className="mt-4">
-          <HPBar value={72} />
+          <HPBar value={hp} />
         </div>
         <div className="mt-3 flex justify-around text-center">
           <div><p className="font-display text-lg font-bold">42</p><p className="text-[10px] uppercase text-muted-foreground">days</p></div>
           <div><p className="font-display text-lg font-bold">312</p><p className="text-[10px] uppercase text-muted-foreground">quests</p></div>
-          <div><p className="font-display text-lg font-bold">7</p><p className="text-[10px] uppercase text-muted-foreground">streak</p></div>
+          <div><p className="font-display text-lg font-bold">{streak}</p><p className="text-[10px] uppercase text-muted-foreground">streak</p></div>
         </div>
       </section>
 
       <section className="mt-5">
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="font-display text-base font-semibold">Badges</h3>
+          <h3 className="font-display text-base font-semibold">Legendary badges</h3>
           <span className="text-xs text-muted-foreground"><Trophy className="mr-1 inline h-3 w-3" />4 / 6</span>
         </div>
         <div className="grid grid-cols-3 gap-2.5">

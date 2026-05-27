@@ -1,19 +1,29 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, ClipboardCheck, Sword, BarChart3, User } from "lucide-react";
+import { Tent, ClipboardCheck, Sword, ScrollText, User } from "lucide-react";
 import { ReactNode } from "react";
+import { MagicParticles } from "./MagicParticles";
+import { useHP } from "@/lib/hp-context";
 
 const tabs = [
-  { to: "/home", label: "Home", icon: Home },
+  { to: "/home", label: "Camp", icon: Tent },
   { to: "/checkin", label: "Check-in", icon: ClipboardCheck },
   { to: "/quests", label: "Quests", icon: Sword },
-  { to: "/stats", label: "Stats", icon: BarChart3 },
+  { to: "/stats", label: "Journey", icon: ScrollText },
   { to: "/profile", label: "Me", icon: User },
 ] as const;
 
 export function MobileShell({ children, hideNav = false }: { children: ReactNode; hideNav?: boolean }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { mode } = useHP();
+  const modeClass =
+    mode === "emergency"
+      ? "bg-gradient-to-b from-[oklch(0.92_0.03_240)] to-[oklch(0.95_0.02_280)]"
+      : mode === "recovery"
+      ? "bg-gradient-to-b from-[color-mix(in_oklab,var(--lavender)_25%,white)] to-background"
+      : "";
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-[440px] flex-col px-4 pb-28 pt-6">
+    <div className={`relative mx-auto flex min-h-screen w-full max-w-[440px] flex-col px-4 pb-28 pt-6 transition-colors ${modeClass}`}>
+      <MagicParticles count={mode === "emergency" ? 6 : 14} />
       <main className="flex-1">{children}</main>
       {!hideNav && (
         <nav className="fixed inset-x-0 bottom-4 z-50 mx-auto w-[92%] max-w-[420px]">
