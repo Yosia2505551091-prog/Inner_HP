@@ -15,7 +15,7 @@ export default defineConfig({
     tailwindcss(),
     tsconfigPaths(),
     tanstackStart({
-      preset: "static",
+      preset: "vercel", // Changed from "static" to "vercel"
     }),
   ],
   resolve: {
