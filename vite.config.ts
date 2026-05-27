@@ -6,12 +6,17 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import path from "path";
 
 export default defineConfig({
   plugins: [
     tanstackStart({
-      // Use Vercel preset instead of Cloudflare
       preset: "vercel",
     }),
   ],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
 });
